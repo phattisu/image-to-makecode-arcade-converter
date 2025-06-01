@@ -252,7 +252,7 @@ input[type="file"] {
     
 }
 
-@media (min-width: 450px) and (max-width: 900px) {
+@media (min-width: 420px) and (max-width: 900px) {
     body {
         padding: 2px;
     }
@@ -277,7 +277,7 @@ input[type="file"] {
     }
 }
 
-@media (max-width: 0px) and (max-width: 450px) {
+@media (max-width: 420px) {
     body {
         padding: 2px;
     }
