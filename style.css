@@ -244,25 +244,15 @@ input[type="file"] {
             max-height: 20rem;
         }
     }
-    #parameters {
-        height: 60rem;
-    }
     .colorboard {
         max-width: 39rem;
         margin-left: 11.75rem;
         margin-top: -35.25rem;
     }
-    .dot-matrix-options {
-        max-height: 50rem;
-        margin-left: 13rem;
-        margin-top: -16rem;
-        margin-bottom: 5px;
-        width: 39rem;
-    }
     
 }
 
-@media (min-width: 420px) and (max-width: 900px) {
+@media (min-width: 450px) and (max-width: 900px) {
     body {
         padding: 2px;
     }
@@ -278,22 +268,16 @@ input[type="file"] {
         }
     }
     #parameters {
-        height: 52rem;
+        height: 63rem;
     }
     .colorboard {
         max-width: fit-content;
         margin-left: 10rem;
         margin-top: -35.25rem;
     }
-    .dot-matrix-options {
-        max-height: 30rem;
-        margin-left: calc(0rem - 5.5px);
-        margin-top: 2rem;
-        width: 100%;
-    }
 }
 
-@media (max-width: 420px) {
+@media (max-width: 0px) and (max-width: 450px) {
     body {
         padding: 2px;
     }
@@ -309,19 +293,12 @@ input[type="file"] {
         }
     }
     #parameters {
-        height: 70rem;
+        height: 63rem;
     }
     .colorboard {
         max-width: 14rem;
         margin-top: -35.25rem;
         margin-left: 9rem;
-    }
-    .dot-matrix-options {
-        max-height: 50rem;
-        margin-left: -5px;
-        margin-top: 8rem;
-        margin-bottom: 5px;
-        width: 100%;
     }
     div.output {
         flex-direction: row;
