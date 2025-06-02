@@ -7,13 +7,14 @@ let gifMinDelay = 0; // Store minimum GIF frame delay
 let imgrender = [];
 let sizeTotal = {width: 0, height: 0}; // Total size for MakeCode sprite
 let imgSizeTotal = {width: 0, height: 0}; // Total size for image display
+let canvasName = "canvas"; // Default canvas name
 
 // --- Get DOM Elements ---
-const image = document.querySelector("img");
 const canvas = document.querySelector("canvas");
 const ctx = canvas.getContext("2d"); // Use ctx for context
 const copyButton = document.querySelector("button#copy");
 const runButton = document.querySelector("button#run");
+const downloadButton = document.querySelector("button#download");
 const customSizes = document.querySelectorAll("input[type='number'].custom");
 const fileInput = document.querySelector("input#myFile");
 const form = document.querySelector("form"); // Size form
@@ -384,6 +385,7 @@ async function whenImageIsUploaded() {
                     img.src = canvas.toDataURL(); // Display first frame on the img element
 
                     runButton.removeAttribute("disabled");
+                    downloadButton.removeAttribute("disabled");
 
                 } else {
                     statusDiv.textContent = "Error: GIF has no frames.";
@@ -393,6 +395,7 @@ async function whenImageIsUploaded() {
                 console.error("Error parsing GIF:", error);
                 statusDiv.textContent = "Error parsing GIF. Invalid file?";
                 runButton.setAttribute("disabled", "true");
+                downloadButton.setAttribute("disabled", "true");
                 gifData = null; // Clear invalid data
             }
 
@@ -724,9 +727,12 @@ async function convert(imgElement, frameImageData = null, frameIndex = 0) {
 		.replaceAll("-", "")
 		.replaceAll(":", "")
 		.replaceAll(".", "")
+
+        canvasName = `canvas${dateString}`; // Update canvas name for static image
         // For static image, set textarea and enable copy
         textarea.textContent = `let mySprite${dateString} = sprites.create(${spriteCode}, SpriteKind.Player);\n`;
         copyButton.removeAttribute("disabled");
+        downloadButton.removeAttribute("disabled");
         return { spriteCode: spriteCode }; // Return for consistency
     }
 }
@@ -825,6 +831,8 @@ async function running() {
             textarea.textContent = gifOutput;
             statusDiv.textContent = `Conversion complete: ${gifData.frames.length} frames processed.`;
             copyButton.removeAttribute("disabled");
+            downloadButton.removeAttribute("disabled");
+            runButton.removeAttribute("disabled");
         }
 
 
@@ -842,6 +850,7 @@ async function running() {
             statusDiv.textContent = "Error converting image. See console.";
             runButton.setAttribute("disabled", "true");
             copyButton.setAttribute("disabled", "true");
+            downloadButton.setAttribute("disabled", "true");
         }
     }
 
@@ -949,11 +958,6 @@ function getRatioChecking () {
     }
 }
 
-
-// --- Initial State ---
-runButton.setAttribute("disabled", "true"); // Disable run on load
-copyButton.setAttribute("disabled", "true"); // Disable copy on load
-
 document.querySelector("input#width").value = canvas.width
 document.querySelector("input#height").value = canvas.height
 
@@ -971,5 +975,26 @@ copyButton.addEventListener("click", function addCodeToClipboard() {
     copyButton.innerText = "Code copied to clipboard!";
     // resetImageSize(document.querySelector("img")); // Not needed
 });
+
+downloadButton.addEventListener("click", function(e) {
+    e.preventDefault();
+    const imgInfo = document.querySelector("img");
+    if (!imgInfo || !imgInfo.src) {
+        alert("No image to download.");
+        return;
+    }
+    const img = canvas.toDataURL(`${imgInfo.type}` || "image/png"); // Use image type or default to PNG
+    if (!img) {
+        alert("No image to download.");
+        return;
+    }
+    const filename = `${canvasName}`; // Use canvasName or default to image.png
+    const link = document.createElement("a");
+    link.href = img;
+    link.download = filename;
+    link.click();
+    console.log(`Image downloaded as ${filename}`);
+    link.remove(); // Clean up the link element
+})
 
 console.log("Image Processing Tool Loaded");

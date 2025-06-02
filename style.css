@@ -18,7 +18,7 @@ input[disabled] {
     padding: 5px;
     border-radius: 0.3em;
     position: relative;
-    height: 51.5rem;
+    height: 56.5rem;
 }
 #left {
     margin-right: 80px;
@@ -235,9 +235,6 @@ input[type="file"] {
             max-height: 20rem;
         }
     }
-    #parameters {
-        height: 51.5rem;
-    }
     .colorboard {
         max-width: 39rem;
         margin-left: 11.75rem;
@@ -260,9 +257,6 @@ input[type="file"] {
             max-width: 30rem;
             max-height: 20rem;
         }
-    }
-    #parameters {
-        height: 51.5rem;
     }
     .colorboard {
         max-width: fit-content;
@@ -291,7 +285,7 @@ input[type="file"] {
     }
     .colorboard {
         max-width: 14rem;
-        margin-top: -35.25rem;
+        margin-top: -39.25rem;
         margin-left: 11.5rem;
     }
     div.output {
