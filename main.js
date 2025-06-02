@@ -483,7 +483,6 @@ async function convert(imgElement, frameImageData = null, frameIndex = 0) {
 
     let outputCanvasWidth = targetWidth;
     let outputCanvasHeight = targetHeight;
-    let makeCodeScaleFactor = 1; // How much MakeCode dimensions are scaled
 
     // get resulting size based on canvas size
     sizeTotal.width = targetWidth;
@@ -911,9 +910,10 @@ function updateImageDimensions(img, sizeMode) {
 
 document.querySelectorAll("input#width").forEach(iwidth => {
     iwidth.addEventListener("change", function () {
-        if (document.querySelector("input#ratio").checked) {
-            if (document.querySelector("img")) {
-                const factor = document.querySelector("input#width").value / document.querySelector("img").width;
+        if (document.querySelector("input#ratio").checked == true) {
+            const canvasSize = {width: sizeTotal.width, height: sizeTotal.height};
+            if (image) {
+                const factor = document.querySelector("input#width").value / image.width;
                 document.querySelector("input#height").value = Math.round(document.querySelector("img").height * factor);
             } else {
                 const factor = document.querySelector("input#width").value / canvas.width;
@@ -925,9 +925,9 @@ document.querySelectorAll("input#width").forEach(iwidth => {
 
 document.querySelectorAll("input#height").forEach(iheight => {
     iheight.addEventListener("change", function () {
-        if (document.querySelector("input#ratio").checked) {
-            if (document.querySelector("img")) {
-                const factor = document.querySelector("input#height").value / document.querySelector("img").height;
+        if (document.querySelector("input#ratio").checked == true) {
+            if (image) {
+                const factor = document.querySelector("input#height").value / image.height;
                 document.querySelector("input#width").value = Math.round(document.querySelector("img").width * factor);
             } else {
                 const factor = document.querySelector("input#height").value / canvas.height;
@@ -937,17 +937,17 @@ document.querySelectorAll("input#height").forEach(iheight => {
     })
 })
 
-document.querySelector("input#ratio").addEventListener("change", function () {
-    if (document.querySelector("input#ratio").checked) {
-        if (document.querySelector("img")) {
-            document.querySelector("input#height").value = document.querySelector("img").height;
-            document.querySelector("input#width").value = document.querySelector("img").width;
+function getRatioChecking () {
+    if (document.querySelector("input#ratio").checked == true) {
+        if (image) {
+            document.querySelector("input#height").value = image.height;
+            document.querySelector("input#width").value = image.width;
         } else {
             document.querySelector("input#height").value = canvas.height;
             document.querySelector("input#width").value = canvas.width;
         }
     }
-})
+}
 
 
 // --- Initial State ---
@@ -972,4 +972,4 @@ copyButton.addEventListener("click", function addCodeToClipboard() {
     // resetImageSize(document.querySelector("img")); // Not needed
 });
 
-console.log(document.querySelector("input#ratio").disabled)
+console.log("Image Processing Tool Loaded");
