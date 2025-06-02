@@ -18,7 +18,7 @@ input[disabled] {
     padding: 5px;
     border-radius: 0.3em;
     position: relative;
-    height: 55rem;
+    height: 51.5rem;
 }
 #left {
     margin-right: 80px;
@@ -135,10 +135,9 @@ textarea {
     background-color: #000;
     color: #fff;
     width: calc(100%); /* Adjusted width */
-    margin-top: 20px;
     padding: 10px;
-    min-height: 200px; /* Added min-height */
-    box-sizing: border-box; /* Include padding in width */
+    min-height: 20rem; /* Added min-height */
+    box-sizing: border-box;
 }
 #status {
     margin-bottom: 10px;
@@ -153,12 +152,16 @@ canvas {
     padding: 5px;
     margin: 2.5px;
     border: 1px solid gray; /* Added border */
+    max-width: calc(50% - 1.5rem);
+    max-height: auto;
 }
 img {
     float: left;
     padding: 5px;
     margin: 2.5px;
     border: 1px solid gray; /* Added border */
+    max-width: calc(50% - 1.5rem);
+    max-height: auto;
 }
 div.output {
     display: flex;
@@ -168,6 +171,7 @@ div.output {
     padding: 5px;
     margin: 1px;
     min-width: calc(100% - 0.75em);
+    justify-content: left;
 }
 #info {
     background-color: #000;
@@ -203,19 +207,6 @@ input[type="file"] {
     border-radius: 0.5em;
 }
 
-.dot-matrix-options {
-    border: 1px dashed lightblue;
-    float: left;
-    padding: 5px;
-    margin-left: -3rem;
-    margin-top: 0rem;
-    border-radius: 0.5em;
-    display: flex;
-    flex-direction: column;
-    flex-wrap: wrap;
-    max-height: 15rem;
-}
-
 .hidden {
     display: none;
 }
@@ -244,6 +235,9 @@ input[type="file"] {
             max-height: 20rem;
         }
     }
+    #parameters {
+        height: 51.5rem;
+    }
     .colorboard {
         max-width: 39rem;
         margin-left: 11.75rem;
@@ -252,7 +246,7 @@ input[type="file"] {
     
 }
 
-@media (min-width: 420px) and (max-width: 900px) {
+@media (min-width: 580px) and (max-width: 900px) {
     body {
         padding: 2px;
     }
@@ -268,7 +262,7 @@ input[type="file"] {
         }
     }
     #parameters {
-        height: 63rem;
+        height: 51.5rem;
     }
     .colorboard {
         max-width: fit-content;
@@ -277,7 +271,7 @@ input[type="file"] {
     }
 }
 
-@media (max-width: 420px) {
+@media (max-width: 580px) {
     body {
         padding: 2px;
     }
@@ -293,12 +287,12 @@ input[type="file"] {
         }
     }
     #parameters {
-        height: 63rem;
+        height: 62rem;
     }
     .colorboard {
         max-width: 14rem;
         margin-top: -35.25rem;
-        margin-left: 9rem;
+        margin-left: 11.5rem;
     }
     div.output {
         flex-direction: row;

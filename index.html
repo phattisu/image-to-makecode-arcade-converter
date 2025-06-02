@@ -14,9 +14,8 @@
             <p>Upload an image (JPG, PNG, GIF) to convert it into MakeCode Arcade sprite code. Select processing mode and options.</p>
         </div>
         
-        image input <input type="file" id="myFile" accept="image/*"/>
-        
-        pallete input <input type="file" id="myPal" accept="text/plain, .hex"/>
+        <p>image input</p> <input type="file" id="myFile" accept="image/*" ondrop="dropHandler(event)" ondragover="dragoverHandler(event)"/> 
+        <p>pallete input</p> <input type="file" id="myPal" accept="text/plain, .hex" ondrop="dropHandler(event)" ondragover="dragoverHandler(event)"/>
         
         <div id="status">Waiting for file...</div>
         
@@ -138,9 +137,9 @@
         
         </div>
 
-        <div class="output"><canvas></canvas> </div>
+        <div class="output"><canvas></canvas></div>
         
-        <textarea class="" id="" rows="10" cols="80" readonly></textarea>
+        <textarea class="" id="" rows="10" cols="80" style="resize: none;" readonly></textarea>
             
         <script src="https://cdn.jsdelivr.net/npm/gifuct-js@2.1.2/dist/gifuct-js.min.js"></script>
         <script src="main.js"></script>

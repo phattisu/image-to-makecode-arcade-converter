@@ -5,8 +5,11 @@ let originalImageSize = { width: 0, height: 0 };
 let gifData = null; // Store parsed GIF data
 let gifMinDelay = 0; // Store minimum GIF frame delay
 let imgrender = [];
+let sizeTotal = {width: 0, height: 0}; // Total size for MakeCode sprite
+let imgSizeTotal = {width: 0, height: 0}; // Total size for image display
 
 // --- Get DOM Elements ---
+const image = document.querySelector("img");
 const canvas = document.querySelector("canvas");
 const ctx = canvas.getContext("2d"); // Use ctx for context
 const copyButton = document.querySelector("button#copy");
@@ -195,6 +198,18 @@ colorTexts.forEach(textInput => {
     });
 });
 
+function dragstartHandler(ev) {
+    ev.dataTransfer.setData("text", ev.target.id);
+}
+
+function dragoverHandler(ev) {
+    ev.preventDefault();
+}
+
+function dropHandler(ev) {
+    ev.preventDefault();
+    whenImageIsUploaded(); // Ensure image is loaded before processing
+}
 
 // --- Event Listeners ---
 runButton.addEventListener("click", running); // Removed duplicate listener
@@ -469,6 +484,14 @@ async function convert(imgElement, frameImageData = null, frameIndex = 0) {
     let outputCanvasWidth = targetWidth;
     let outputCanvasHeight = targetHeight;
     let makeCodeScaleFactor = 1; // How much MakeCode dimensions are scaled
+
+    // get resulting size based on canvas size
+    sizeTotal.width = targetWidth;
+    sizeTotal.height = targetHeight;
+    
+    // get resulting size based on image size
+    imgSizeTotal.width = imgElement.naturalWidth;
+    imgSizeTotal.height = imgElement.naturalHeight;
 
     // Set canvas size for the output preview
     canvas.width = outputCanvasWidth;
@@ -811,7 +834,10 @@ async function running() {
         try {
             const result = convert(img); // Process the single image
             // Textarea and copy button are handled inside convert for static images
-            statusDiv.textContent = "Conversion complete.";
+            statusDiv.textContent = `Conversion complete. imagesizetotal(${imgSizeTotal.width}x${imgSizeTotal.height}) canvassizetotal(${sizeTotal.width}x${sizeTotal.height})`;
+            if ((imgSizeTotal.width.isNaN || imgSizeTotal.height.isNaN) || (sizeTotal.width.isNaN || sizeTotal.height.isNaN)) {
+                statusDiv.textContent = "Invalid to converting from image size"
+            };
         } catch (error) {
             console.error("Error converting image:", error);
             statusDiv.textContent = "Error converting image. See console.";
