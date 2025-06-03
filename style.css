@@ -151,27 +151,23 @@ canvas {
     float: left;
     padding: 5px;
     margin: 2.5px;
-    border: 1px solid gray; /* Added border */
-    max-width: calc(50% - 1.5rem);
-    max-height: auto;
 }
 img {
     float: left;
     padding: 5px;
     margin: 2.5px;
-    border: 1px solid gray; /* Added border */
-    max-width: calc(50% - 1.5rem);
-    max-height: auto;
 }
 div.output {
     display: flex;
     flex-direction: row;
-    float: left;
+    flex-wrap: wrap;
+    justify-content: center; /* Center content */
+    align-content: center; /* Center content vertically */
     border: 1px dashed rgb(255, 240, 157); /* Added border */
+    border-radius: 0.3em; /* Rounded corners */
     padding: 5px;
     margin: 1px;
-    min-width: calc(100% - 0.75em);
-    justify-content: left;
+    max-width: 100%;
 }
 #info {
     background-color: #000;
@@ -281,12 +277,12 @@ input[type="file"] {
         }
     }
     #parameters {
-        height: 62rem;
+        height: 62.5rem;
     }
     .colorboard {
         max-width: 14rem;
         margin-top: -39.25rem;
-        margin-left: 8.5rem;
+        margin-left: 9.75rem;
     }
     div.output {
         flex-direction: row;

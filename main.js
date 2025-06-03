@@ -480,7 +480,6 @@ async function convert(imgElement, frameImageData = null, frameIndex = 0) {
         originalHeight = imgElement.naturalHeight;
     }
 
-
     let targetWidth = imgElement.width; // Use the adjusted display size
     let targetHeight = imgElement.height;
 
@@ -919,10 +918,10 @@ function updateImageDimensions(img, sizeMode) {
 
 document.querySelectorAll("input#width").forEach(iwidth => {
     iwidth.addEventListener("change", function () {
-        if (document.querySelector("input#ratio").checked == true) {
-            const canvasSize = {width: sizeTotal.width, height: sizeTotal.height};
-            if (image) {
-                const factor = document.querySelector("input#width").value / image.width;
+        if (document.querySelector("input#ratio").checked) {
+            const img = document.querySelector("img");
+            if (img) {
+                const factor = document.querySelector("input#width").value / img.width;
                 document.querySelector("input#height").value = Math.round(document.querySelector("img").height * factor);
             } else {
                 const factor = document.querySelector("input#width").value / canvas.width;
@@ -934,9 +933,10 @@ document.querySelectorAll("input#width").forEach(iwidth => {
 
 document.querySelectorAll("input#height").forEach(iheight => {
     iheight.addEventListener("change", function () {
-        if (document.querySelector("input#ratio").checked == true) {
-            if (image) {
-                const factor = document.querySelector("input#height").value / image.height;
+        if (document.querySelector("input#ratio").checked) {
+            const img = document.querySelector("img");
+            if (img) {
+                const factor = document.querySelector("input#height").value / img.height;
                 document.querySelector("input#width").value = Math.round(document.querySelector("img").width * factor);
             } else {
                 const factor = document.querySelector("input#height").value / canvas.height;
@@ -947,7 +947,7 @@ document.querySelectorAll("input#height").forEach(iheight => {
 })
 
 function getRatioChecking () {
-    if (document.querySelector("input#ratio").checked == true) {
+    if (document.querySelector("input#ratio").checked) {
         if (image) {
             document.querySelector("input#height").value = image.height;
             document.querySelector("input#width").value = image.width;
