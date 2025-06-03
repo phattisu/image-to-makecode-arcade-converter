@@ -853,6 +853,10 @@ async function running() {
         }
     }
 
+    // Set canvas dimensions to match the img element for drawing
+    document.querySelector("input#width").value = canvas.width;
+    document.querySelector("input#height").value = canvas.height;
+
     runButton.removeAttribute("disabled");
 }
 
