@@ -1,3 +1,69 @@
+
+// --- GIF Handler Module (omggif) ---
+const gifHandler = {
+    /**
+     * สร้าง GifReader จากไฟล์ GIF (ArrayBuffer)
+     * @param {ArrayBuffer} arrayBuffer
+     * @returns {omggif.GifReader}
+     */
+    createReader(arrayBuffer) {
+        try {
+            return new omggif.GifReader(new Uint8Array(arrayBuffer));
+        } catch (err) {
+            console.error("Error creating GifReader:", err);
+            throw new Error("ไม่สามารถอ่านไฟล์ GIF ได้ (GifReader)");
+        }
+    },
+
+    /**
+     * ดึงข้อมูลเฟรมทั้งหมดจาก GifReader
+     * @param {omggif.GifReader} gr
+     * @returns {Array} เฟรมทั้งหมด
+     */
+    getFrames(gr) {
+        try {
+            const frames = [];
+            for (let i = 0; i < gr.numFrames(); i++) {
+                const info = gr.frameInfo(i);
+                frames.push({
+                    index: i,
+                    delay: info.delay * 10, // ms
+                    disposal: info.disposal,
+                    dims: {
+                        left: info.x,
+                        top: info.y,
+                        width: info.width,
+                        height: info.height
+                    }
+                });
+            }
+            return frames;
+        } catch (err) {
+            console.error("Error getting GIF frames:", err);
+            throw new Error("ไม่สามารถอ่านเฟรม GIF ได้");
+        }
+    },
+
+    /**
+     * แปลงเฟรม GIF เป็น ImageData
+     * @param {omggif.GifReader} gr
+     * @param {number} frameIndex
+     * @returns {ImageData}
+     */
+    getFrameImageData(gr, frameIndex) {
+        try {
+            const width = gr.width;
+            const height = gr.height;
+            const imageData = new ImageData(width, height);
+            gr.decodeAndBlitFrame(frameIndex, imageData.data);
+            return imageData;
+        } catch (err) {
+            console.error(`Error decoding GIF frame ${frameIndex}:`, err);
+            throw new Error(`ไม่สามารถแปลงเฟรมที่ ${frameIndex + 1} เป็น ImageData ได้`);
+        }
+    }
+};
+
 let currentMode = "solid"; // "solid" or "dotMatrix"
 let currentDotMatrixType = "pattern"; // "pattern" or "solidApprox"
 let dotBlockSize = 2; // Default dot matrix block size
@@ -357,42 +423,78 @@ async function whenImageIsUploaded() {
         };
 
         if (file.type === "image/gif") {
-            statusDiv.textContent = "Loading GIF...";
+            statusDiv.textContent = "Loading GIF (using omggif)...";
             try {
                 const arrayBuffer = await file.arrayBuffer();
-                const gif = new GIFuct(arrayBuffer);
-                gifData = gif.parseGIF()
-                    .then(parsedData => {
-                        console.log("Parsed GIF data:", parsedData);
-                        return parsedData;
-                    })
-                    .catch(error => {
-                        comsole.error("Error parsing GIF:", error);
+                const uint8Array = new Uint8Array(arrayBuffer); // Convert ArrayBuffer to Uint8Array for omggif
+
+                // Initialize GifReader from omggif
+                const gr = new omggif.GifReader(uint8Array);
+
+                // Store GIF properties and frames
+                gifData = {
+                    width: gr.width, // GIF logical screen width
+                    height: gr.height, // GIF logical screen height
+                    frames: [],
+                    globalPalette: gr.gct, // Global Color Table
+                    lsd: { // Mimic gifuct-js lsd structure for compatibility if needed later
+                        width: gr.width,
+                        height: gr.height,
+                        // Add other LSD properties if needed, e.g., bgIndex, pixelAspectRatio
+                    }
+                };
+
+                gifMinDelay = Infinity; // Reset min delay
+
+                for (let i = 0; i < gr.numFrames(); i++) { // Iterate through frames
+                    const frameInfo = gr.frameInfo(i); // Get frame details
+                    gifData.frames.push({
+                        dims: {
+                            left: frameInfo.x,
+                            top: frameInfo.y,
+                            width: frameInfo.width,
+                            height: frameInfo.height
+                        },
+                        delay: frameInfo.delay * 10, // omggif delay is in 1/100ths of a second, convert to ms
+                        disposal: frameInfo.disposal, // Disposal method
+                        // pixelData will be generated on demand
                     });
+                    gifMinDelay = Math.min(gifMinDelay, frameInfo.delay * 10); // Update min delay
+                }
+
+                if (gifMinDelay === Infinity) gifMinDelay = 0; // Handle case with no delay info
 
                 if (gifData.frames.length > 0) {
-                    gifMinDelay = gifData.frames.reduce((min, frame) => Math.min(min, frame.delay || Infinity), Infinity);
-                    if (gifMinDelay === Infinity) gifMinDelay = 0; // Handle case with no delay info
+                    statusDiv.textContent = `GIF loaded: <span class="math-inline">\{gifData\.width\}x</span>{gifData.height}, ${gifData.frames.length} frames, min delay: ${gifMinDelay}ms`;
 
-                    statusDiv.textContent = `GIF loaded: ${originalImageSize.width}x${originalImageSize.height}, ${gifData.frames.length} frames, min delay: ${gifMinDelay}ms`;
-
-                     // Use the first frame for initial display dimensions
-                    const firstFrame = await processFrameDataToImageData(gifData.frames[0], gifData.lsd);
-                    canvas.width = firstFrame.width;
-                    canvas.height = firstFrame.height;
-                    ctx.putImageData(firstFrame, 0, 0);
+                    // For initial display, we need to draw the first frame
+                    // We'll use a temporary canvas to get ImageData for the first frame
+                    canvas.width = gifData.width; // Set canvas size to GIF's logical screen size
+                    canvas.height = gifData.height;
+                    const firstFrameImageData = new ImageData(gifData.width, gifData.height);
+                    gr.decodeAndBlitFrame(0, firstFrameImageData.data); // Decode and blit the first frame
+                    ctx.putImageData(firstFrameImageData, 0, 0); // Draw to preview canvas
 
                     img.src = canvas.toDataURL(); // Display first frame on the img element
+                    img.onload = () => { // Ensure img element is loaded
+                        originalImageSize.width = img.width;
+                        originalImageSize.height = img.height;
 
-                    runButton.removeAttribute("disabled");
-                    downloadButton.removeAttribute("disabled");
+                        // Set initial size mode and update dimensions for the img element
+                        const initialSizeMode = document.querySelector("input[name='sizeOption']:checked").id;
+                        updateImageDimensions(img, initialSizeMode);
+
+                        runButton.removeAttribute("disabled");
+                        downloadButton.removeAttribute("disabled");
+                        running(); // Auto-run on load
+                    };
 
                 } else {
                     statusDiv.textContent = "Error: GIF has no frames.";
                     runButton.setAttribute("disabled", "true");
                 }
             } catch (error) {
-                console.error("Error parsing GIF:", error);
+                console.error("Error parsing GIF with omggif:", error);
                 statusDiv.textContent = "Error parsing GIF. Invalid file?";
                 runButton.setAttribute("disabled", "true");
                 downloadButton.setAttribute("disabled", "true");
@@ -402,6 +504,18 @@ async function whenImageIsUploaded() {
         } else {
             // For non-GIFs, just set the src
             img.src = e.target.result;
+            img.onload = () => {
+                originalImageSize.width = img.width;
+                originalImageSize.height = img.height;
+
+                // Set initial size mode (e.g., full-width) and update dimensions
+                const initialSizeMode = document.querySelector("input[name='sizeOption']:checked").id;
+                updateImageDimensions(img, initialSizeMode);
+
+                statusDiv.textContent = `Image loaded: <span class="math-inline">\{originalImageSize\.width\}x</span>{originalImageSize.height}`;
+                runButton.removeAttribute("disabled");
+                running(); // Auto-run on load
+            };
         }
     };
 
@@ -409,47 +523,12 @@ async function whenImageIsUploaded() {
 }
 
 // Function to process raw frame data from gifuct-js into ImageData
-async function processFrameDataToImageData(frameData, lsd) {
-    // This requires creating a temporary canvas to draw the frame on
-    // gifuct-js provides frame.getImageData(), but it might need the full GIF context
-    // A simpler way is to let gifuct-js draw to a canvas
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = lsd.width;
-    tempCanvas.height = lsd.height;
-    const tempCtx = tempCanvas.getContext('2d');
-
-    // gifuct-js internal rendering often needs the full gif object,
-    // or we manually draw based on frame.patch and previous frame data
-    // Let's use the buildPatch method which simplifies this
-    const patch = await new GIFuct([frameData], lsd).buildPatch(); // Needs full lsd
-
-    // We need to draw patch onto the canvas based on the frame's properties
-    // This part can be complex depending on disposal method.
-    // A basic approach is to draw the patch at frame.dims.left, frame.dims.top
-    const frameImageData = new ImageData(lsd.width, lsd.height);
-
-    // Need a way to composite frames correctly respecting disposal methods
-    // This might be better handled by gifuct-js itself or requires more complex logic
-    // For simplicity, let's try to get ImageData for the frame's patch and draw it
-    // A more robust way: use gif.renderFrame(index, canvas_context) if available or manually composite
-
-    // As a basic starting point, let's assume we can get the pixel data for the frame area
-    // This is a simplified representation and might not handle all GIF disposal methods correctly.
-    // A full implementation would need to draw previous frames and clear areas based on disposal.
-
-    // Alternative: Get the frame's pixel data directly if possible (gifuct-js might support this)
-    // Or use a helper function that composites frames.
-
-    // Let's use a simplified approach: Just get the pixel data for the frame's patch
-    // This ignores previous frames and disposal methods, suitable for simple GIFs.
-    const framePatchImageData = new ImageData(new Uint8ClampedArray(patch), frameData.dims.width, frameData.dims.height);
-
-    // Now draw this patch onto the temporary canvas at the correct position
-    tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height); // Clear for each frame's patch
-    tempCtx.putImageData(framePatchImageData, frameData.dims.left, frameData.dims.top);
-
-    // Return the ImageData of the whole frame area
-    return tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+async function getGifFrameImageData(gr, frameIndex) {
+    const width = gr.width;
+    const height = gr.height;
+    const imageData = new ImageData(width, height);
+    gr.decodeAndBlitFrame(frameIndex, imageData.data);
+    return imageData;
 }
 
 function rgb(r,g,b) {
@@ -736,7 +815,7 @@ async function convert(imgElement, frameImageData = null, frameIndex = 0) {
     }
 }
 
-// Function to run the conversion process
+// ปรับปรุงฟังก์ชัน running ให้ใช้ gifHandler และจัดการ error
 async function running() {
     runButton.setAttribute("disabled", "true");
     copyButton.setAttribute("disabled", "true");
@@ -749,83 +828,64 @@ async function running() {
         return;
     }
 
-     // Ensure image dimensions are set according to size options before processing
+    // Ensure image dimensions are set according to size options before processing
     const currentSizeMode = document.querySelector("input[name='sizeOption']:checked").id;
-    updateImageDimensions(img, currentSizeMode); // Update img element dimensions
-
+    updateImageDimensions(img, currentSizeMode);
 
     if (gifData && gifData.frames.length > 0) {
-        // Process GIF frames
         statusDiv.textContent = `Converting GIF with ${gifData.frames.length} frames...`;
         const frameResults = [];
         let processingErrors = false;
 
-        for (let i = 0; i < gifData.frames.length; i++) {
-            try {
-                statusDiv.textContent = `Converting frame ${i + 1}/${gifData.frames.length}...`;
-                 // Need to get ImageData for the current frame, properly composited
-                 // This requires a more advanced GIF rendering approach than just getting the patch.
-                 // Let's simplify: just process the patch data for now, acknowledging limitations with complex GIFs.
-                 // A robust solution needs frame compositing logic (draw previous frame, apply disposal, draw current patch).
+        try {
+            // Re-read file to get GifReader instance for frame decoding
+            const file = document.querySelector("input#myFile").files[0];
+            const arrayBuffer = await file.arrayBuffer();
+            const gr = gifHandler.createReader(arrayBuffer);
+            const frames = gifHandler.getFrames(gr);
 
-                 // Simplified approach: Draw the GIF frame to a temporary canvas using gifuct-js's renderer
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = gifData.lsd.width;
-                tempCanvas.height = gifData.lsd.height;
-                const tempCtx = tempCanvas.getContext('2d');
+            // Create an offscreen canvas for frame compositing
+            const offscreenCanvas = document.createElement('canvas');
+            offscreenCanvas.width = gifData.width;
+            offscreenCanvas.height = gifData.height;
+            const offscreenCtx = offscreenCanvas.getContext('2d');
 
-                 // This requires a method from gifuct-js to render a specific frame
-                 // Assuming such a method exists or we implement the logic:
-                 // For demonstration, let's try to get ImageData from the buildPatch result again
-                 // Note: This will likely only work correctly for GIFs with Disposal Method 1 (None)
-                const framePatch = await new GIFuct([gifData.frames[i]], gifData.lsd).buildPatch();
-                const framePatchImageData = new ImageData(new Uint8ClampedArray(framePatch), gifData.frames[i].dims.width, gifData.frames[i].dims.height);
+            for (let i = 0; i < gifData.frames.length; i++) {
+                try {
+                    statusDiv.textContent = `Converting frame ${i + 1}/${gifData.frames.length}...`;
 
-                 // Create a canvas the size of the full GIF frame
-                const fullFrameCanvas = document.createElement('canvas');
-                fullFrameCanvas.width = gifData.lsd.width;
-                fullFrameCanvas.height = gifData.lsd.height;
-                const fullFrameCtx = fullFrameCanvas.getContext('2d');
+                    // ใช้ gifHandler ในการแปลงเฟรม
+                    const currentFrameImageData = gifHandler.getFrameImageData(gr, i);
 
-                 // Draw the patch onto the full frame canvas at the correct position
-                fullFrameCtx.putImageData(framePatchImageData, gifData.frames[i].dims.left, gifData.frames[i].dims.top);
+                    offscreenCtx.putImageData(currentFrameImageData, 0, 0);
+                    const fullFrameImageData = offscreenCtx.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height);
 
-                 // Get the full frame ImageData
-                const fullFrameImageData = fullFrameCtx.getImageData(0, 0, fullFrameCanvas.width, fullFrameCanvas.height);
-
-                 // Now, process this full frame ImageData
-                const result = await convert(img, fullFrameImageData, i); // Pass ImageData and index
-                frameResults.push(result);
-            } catch (error) {
-                console.error(`Error processing GIF frame ${i}:`, error);
-                statusDiv.textContent = `Error processing GIF frame ${i + 1}. See console.`;
-                processingErrors = true;
-                break; // Stop processing on error
+                    const result = await convert(img, fullFrameImageData, i);
+                    frameResults.push({ spriteCode: result.spriteCode, delay: frames[i].delay });
+                } catch (frameErr) {
+                    console.error(frameErr);
+                    statusDiv.textContent = `Error processing GIF frame ${i + 1}: ${frameErr.message}`;
+                    processingErrors = true;
+                    break;
+                }
             }
+        } catch (err) {
+            console.error(err);
+            statusDiv.textContent = `GIF processing error: ${err.message}`;
+            runButton.removeAttribute("disabled");
+            return;
         }
 
         if (!processingErrors) {
-             // Combine frame results into a single output string
             let gifOutput = `let gifFrames = [\n`;
-            frameResults.forEach((frame, index) => {
+            frameResults.forEach((frame) => {
                 gifOutput += `  ${frame.spriteCode},\n`;
             });
-            gifOutput += `];\n\n`;
-            gifOutput += `let frameDelays = [\n`;
-             // Use original delays, or modify based on minDelay if needed
-            frameResults.forEach((frame, index) => {
-                 gifOutput += `  ${frame.delay},\n`; // Use delay from parsing
+            gifOutput += `];\n\nlet frameDelays = [\n`;
+            frameResults.forEach((frame) => {
+                gifOutput += `  ${frame.delay},\n`;
             });
-            gifOutput += `];\n\n`;
-
-            // Add example code to play the animation (basic loop)
-            gifOutput += `let currentFrame = 0;\n`;
-            gifOutput += `let animationSprite = sprites.create(gifFrames[0], SpriteKind.Player);\n`;
-            gifOutput += `game.onEveryInterval(frameDelays[currentFrame], function () {\n`;
-            gifOutput += `  currentFrame = (currentFrame + 1) % gifFrames.length;\n`;
-            gifOutput += `  animationSprite.setImage(gifFrames[currentFrame]);\n`;
-            gifOutput += `});\n`;
-
+            gifOutput += `];\n\nlet currentFrame = 0;\nlet animationSprite = sprites.create(gifFrames[0], SpriteKind.Player);\ngame.onEveryInterval(frameDelays[currentFrame], function () {\n  currentFrame = (currentFrame + 1) % gifFrames.length;\n  animationSprite.setImage(gifFrames[currentFrame]);\n});\n`;
 
             textarea.textContent = gifOutput;
             statusDiv.textContent = `Conversion complete: ${gifData.frames.length} frames processed.`;
@@ -833,17 +893,14 @@ async function running() {
             downloadButton.removeAttribute("disabled");
             runButton.removeAttribute("disabled");
         }
-
-
     } else {
         // Process static image
         try {
-            const result = convert(img); // Process the single image
-            // Textarea and copy button are handled inside convert for static images
+            const result = await convert(img);
             statusDiv.textContent = `Conversion complete. imagesizetotal(${imgSizeTotal.width}x${imgSizeTotal.height}) canvassizetotal(${sizeTotal.width}x${sizeTotal.height})`;
-            if ((imgSizeTotal.width.isNaN || imgSizeTotal.height.isNaN) || (sizeTotal.width.isNaN || sizeTotal.height.isNaN)) {
-                statusDiv.textContent = "Invalid to converting from image size"
-            };
+            if ((isNaN(imgSizeTotal.width) || isNaN(imgSizeTotal.height)) || (isNaN(sizeTotal.width) || isNaN(sizeTotal.height))) {
+                statusDiv.textContent = "Invalid to converting from image size";
+            }
         } catch (error) {
             console.error("Error converting image:", error);
             statusDiv.textContent = "Error converting image. See console.";
@@ -853,11 +910,11 @@ async function running() {
         }
     }
 
-    // Set canvas dimensions to match the img element for drawing
     document.querySelector("input#width").value = canvas.width;
     document.querySelector("input#height").value = canvas.height;
 
     runButton.removeAttribute("disabled");
+    copyButton.removeAttribute("disabled");
 }
 
 // Function to update the dimensions of the displayed img element based on radio button selection
