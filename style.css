@@ -151,18 +151,34 @@ canvas {
     float: left;
     padding: 5px;
     margin: 2.5px;
+    max-height: 200px;
+    max-width: 200px;
+    min-height: 200px;
+    min-width: 200px;
 }
-img {
+body > img:not(.show) {
+    position: absolute;
+    left: -1000px; /* Hide the original image */
+}
+img.show {
     float: left;
     padding: 5px;
     margin: 2.5px;
+    max-height: 200px;
+    max-width: 200px;
+    min-height: 200px;
+    min-width: 200px;
+}
+canvas img.show {
+    margin: 2px;
+    border: #fff 1px solid;
 }
 div.output {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
-    justify-content: center; /* Center content */
-    align-content: center; /* Center content vertically */
+    justify-content: center;
+    align-content: center;
     border: 1px dashed rgb(255, 240, 157); /* Added border */
     border-radius: 0.3em; /* Rounded corners */
     padding: 5px;

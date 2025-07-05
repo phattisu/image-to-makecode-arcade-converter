@@ -71,8 +71,8 @@ let originalImageSize = { width: 0, height: 0 };
 let gifData = null; // Store parsed GIF data
 let gifMinDelay = 0; // Store minimum GIF frame delay
 let imgrender = [];
-let sizeTotal = {width: 0, height: 0}; // Total size for MakeCode sprite
-let imgSizeTotal = {width: 0, height: 0}; // Total size for image display
+let sizeTotal = {width: NaN, height: NaN}; // Total size for MakeCode sprite
+let imgSizeTotal = {width: NaN, height: NaN}; // Total size for image display
 let canvasName = "canvas"; // Default canvas name
 
 // --- Get DOM Elements ---
@@ -387,6 +387,19 @@ form.addEventListener("submit", function convertImage(event) {
 
 });
 
+function updateShowImage() {
+    const img = document.querySelector("img");
+    const showImg = document.querySelector("img.show");
+    const canvas = document.querySelector("canvas");
+    if (img && showImg && canvas) {
+        showImg.src = img.src;
+        showImg.width = canvas.width;
+        showImg.height = canvas.height;
+        showImg.style.width = canvas.width + "px";
+        showImg.style.height = canvas.height + "px";
+    }
+}
+
 // --- Image Loading and GIF Parsing ---
 async function whenImageIsUploaded() {
     runButton.setAttribute("disabled", "true");
@@ -395,17 +408,20 @@ async function whenImageIsUploaded() {
     gifData = null; // Reset GIF data
 
     const file = this.files[0];
-    if (!file) return;
+    if (!file) {
+        imgSizeTotal = {width: NaN, height: NaN}; // Reset image size
+        sizeTotal = {width: NaN, height: NaN}; // Reset total size
+        return;
+    }
 
     const reader = new FileReader();
 
     reader.onload = async function(e) {
         const img = document.createElement("img");
         const node = document.querySelector("img");
-        if (node !== null) {
-            node.parentNode.removeChild(node);
-        }
-        document.querySelector("div.output").appendChild(img);
+        if (node !== null) node.parentNode.removeChild(node);
+        document.querySelector("body").appendChild(img);
+        document.querySelector("div.output").appendChild(document.createElement("img.show")); // Create a new img.show element
         img.onload = () => {
             originalImageSize.width = img.width;
             originalImageSize.height = img.height;
@@ -483,6 +499,7 @@ async function whenImageIsUploaded() {
                         // Set initial size mode and update dimensions for the img element
                         const initialSizeMode = document.querySelector("input[name='sizeOption']:checked").id;
                         updateImageDimensions(img, initialSizeMode);
+                        updateShowImage(); // Update the output image display
 
                         runButton.removeAttribute("disabled");
                         downloadButton.removeAttribute("disabled");
@@ -511,6 +528,7 @@ async function whenImageIsUploaded() {
                 // Set initial size mode (e.g., full-width) and update dimensions
                 const initialSizeMode = document.querySelector("input[name='sizeOption']:checked").id;
                 updateImageDimensions(img, initialSizeMode);
+                updateShowImage(); // Update the output image display
 
                 statusDiv.textContent = `Image loaded: <span class="math-inline">\{originalImageSize\.width\}x</span>{originalImageSize.height}`;
                 runButton.removeAttribute("disabled");
@@ -570,12 +588,12 @@ async function convert(imgElement, frameImageData = null, frameIndex = 0) {
     sizeTotal.height = targetHeight;
     
     // get resulting size based on image size
-    imgSizeTotal.width = imgElement.naturalWidth;
-    imgSizeTotal.height = imgElement.naturalHeight;
+    if (isNaN(imgSizeTotal.width)) imgSizeTotal.width = imgElement.naturalWidth;
+    if (isNaN(imgSizeTotal.height)) imgSizeTotal.height = imgElement.naturalHeight;
 
     // Set canvas size for the output preview
-    canvas.width = outputCanvasWidth;
-    canvas.height = outputCanvasHeight;
+    canvas.width = imgElement.width;
+    canvas.height = imgElement.height;
     ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
 
     // Get the palette or dot matrix colors
